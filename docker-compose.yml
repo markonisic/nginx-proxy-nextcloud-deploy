@@ -1,0 +1,75 @@
+version: '3'
+
+volumes:
+  nextcloud:
+  db:
+
+services:
+  db:
+    image: mariadb
+    restart: always
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    volumes:
+      - db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=somerootpassword
+      - MYSQL_PASSWORD=somemysqlpassword
+      - MYSQL_DATABASE=db
+      - MYSQL_USER=mysqluser
+
+  app:
+    image: nextcloud
+    restart: always
+    ports:
+      - 8080:80
+    links:
+      - db
+    volumes:
+      - nextcloud:/var/www/html
+    environment:
+      - MYSQL_PASSWORD=somemysqlpassword
+      - MYSQL_DATABASE=db
+      - MYSQL_USER=mysqluser
+      - MYSQL_HOST=db
+    depends_on:
+      - proxy
+      - db
+
+  proxy:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: always
+    ports:
+      # Public HTTP Port:
+      - '80:80'
+      # Public HTTPS Port:
+      - '443:443'
+      # Admin Web Port:
+      - '81:81'
+    environment:
+      # These are the settings to access your db
+      DB_MYSQL_HOST: "db1"
+      DB_MYSQL_PORT: 3306
+      DB_MYSQL_USER: "mysqluser"
+      DB_MYSQL_PASSWORD: "somemysqlpassword"
+      DB_MYSQL_NAME: "db"
+      # If you would rather use Sqlite uncomment this
+      # and remove all DB_MYSQL_* lines above
+      # DB_SQLITE_FILE: "/data/database.sqlite"
+      # Uncomment this if IPv6 is not enabled on your host
+      # DISABLE_IPV6: 'true'
+    volumes:                                              
+      - ./data:/data                                      
+      - ./letsencrypt:/etc/letsencrypt                            
+    depends_on:                                           
+      - db1                                               
+                                                          
+  db1:                                                    
+    image: mariadb                                        
+    restart: always                                       
+    environment:                                          
+      MYSQL_ROOT_PASSWORD: 'somerootpassword'                          
+      MYSQL_DATABASE: 'db'                               
+      MYSQL_USER: 'mysqluser'                                   
+      MYSQL_PASSWORD: 'somemysqlpassword'                      
+    volumes:                                     
+      - ./data/mysql:/var/lib/mysql   
