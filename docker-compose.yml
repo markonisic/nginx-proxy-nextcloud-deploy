@@ -16,7 +16,12 @@ services:
       - MYSQL_PASSWORD=somemysqlpassword
       - MYSQL_DATABASE=db
       - MYSQL_USER=mysqluser
-
+  
+  redis:
+    image: redis
+    restart: always
+    command: redis-server --requirepass someredispassword
+  
   app:
     image: nextcloud
     restart: always
@@ -31,9 +36,11 @@ services:
       - MYSQL_DATABASE=db
       - MYSQL_USER=mysqluser
       - MYSQL_HOST=db
+      - REDIS_HOST_PASSWORD=someredispassword
     depends_on:
       - proxy
       - db
+      - redis
 
   proxy:
     image: 'jc21/nginx-proxy-manager:latest'
